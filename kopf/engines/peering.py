@@ -125,6 +125,8 @@ async def process_peering_event(
     if autoclean and dead_peers:
         await clean(peers=dead_peers, settings=settings, namespace=namespace, resource=resource)
 
+    # TODO? Log also the peering name and namespace?
+    #  With multiple namespaces, it is not clear which one is resume, the operator remains frozen.
     if prio_peers:
         if freeze_toggle.is_off():
             logger.info(f"Freezing operations in favour of {prio_peers}.")

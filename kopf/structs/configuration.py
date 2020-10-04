@@ -112,7 +112,7 @@ class PeeringSettings:
     to avoid double-processing and double-handling of the resources.
     """
 
-    lifetime: int = 60
+    lifetime: int = 15
     """
     For how long (in seconds) the operator's record is considered actual
     by other operators before assuming that the corresponding operator

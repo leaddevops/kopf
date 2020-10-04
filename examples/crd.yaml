@@ -17,10 +17,13 @@ spec:
       - kopfex
       - kexes
       - kex
+    categories:
+      - all
+      - kopf
   versions:
     - name: v1
       served: true
-      storage: true
+      storage: false
       schema:
         openAPIV3Schema:
           type: object
@@ -47,3 +50,41 @@ spec:
           priority: 0
           jsonPath: .status.create_fn.message
           description: As returned from the handler (sometimes).
+    - name: v2
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              x-kubernetes-preserve-unknown-fields: true
+            status:
+              type: object
+              x-kubernetes-preserve-unknown-fields: true
+      additionalPrinterColumns:
+        - name: Duration2
+          type: string
+          priority: 0
+          jsonPath: .spec.duration
+          description: For how long the pod should sleep.
+    - name: v3
+      served: true
+      storage: false
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              x-kubernetes-preserve-unknown-fields: true
+            status:
+              type: object
+              x-kubernetes-preserve-unknown-fields: true
+      additionalPrinterColumns:
+        - name: Duration2
+          type: string
+          priority: 0
+          jsonPath: .spec.duration
+          description: For how long the pod should sleep.

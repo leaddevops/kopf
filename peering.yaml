@@ -58,3 +58,9 @@ metadata:
   namespace: default
   name: default
 ---
+apiVersion: zalando.org/v1
+kind: KopfPeering
+metadata:
+  namespace: default-2
+  name: default
+---
