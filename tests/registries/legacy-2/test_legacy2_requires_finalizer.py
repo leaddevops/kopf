@@ -4,7 +4,7 @@ import kopf
 from kopf.reactor.causation import ResourceCause
 from kopf.reactor.registries import OperatorRegistry
 from kopf.structs.filters import MetaFilterToken
-from kopf.structs.resources import Resource
+from kopf.structs.references import Resource
 
 OBJECT_BODY = {
     'apiVersion': 'group/version',

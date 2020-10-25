@@ -21,7 +21,7 @@ from typing import Any, Callable, Collection, Container, FrozenSet, Generic, Ite
                    List, Mapping, MutableMapping, Optional, Sequence, Set, TypeVar, Union, cast
 
 from kopf.reactor import causation, invocation
-from kopf.structs import callbacks, dicts, filters, handlers, resources as resources_
+from kopf.structs import callbacks, dicts, filters, handlers, references
 from kopf.utilities import piggybacking
 
 # We only type-check for known classes of handlers/callbacks, and ignore any custom subclasses.
@@ -301,9 +301,9 @@ class OperatorRegistry:
     be explicitly created and used in the embedded operators.
     """
     activity_handlers: ActivityRegistry
-    resource_watching_handlers: MutableMapping[resources_.Resource, ResourceWatchingRegistry]
-    resource_spawning_handlers: MutableMapping[resources_.Resource, ResourceSpawningRegistry]
-    resource_changing_handlers: MutableMapping[resources_.Resource, ResourceChangingRegistry]
+    resource_watching_handlers: MutableMapping[references.Resource, ResourceWatchingRegistry]
+    resource_spawning_handlers: MutableMapping[references.Resource, ResourceSpawningRegistry]
+    resource_changing_handlers: MutableMapping[references.Resource, ResourceChangingRegistry]
 
     def __init__(self) -> None:
         super().__init__()
@@ -313,7 +313,7 @@ class OperatorRegistry:
         self.resource_changing_handlers = collections.defaultdict(ResourceChangingRegistry)
 
     @property
-    def resources(self) -> FrozenSet[resources_.Resource]:
+    def resources(self) -> FrozenSet[references.Resource]:
         """ All known resources in the registry. """
         return (frozenset(self.resource_watching_handlers) |
                 frozenset(self.resource_spawning_handlers) |
@@ -362,7 +362,7 @@ class OperatorRegistry:
         warnings.warn("registry.register_resource_watching_handler() is deprecated; "
                       "use @kopf.on... decorators with registry= kwarg.",
                       DeprecationWarning)
-        resource = resources_.Resource(group, version, plural)
+        resource = references.Resource(group, version, plural)
         return self.resource_watching_handlers[resource].register(
             fn=fn, id=id,
             labels=labels, annotations=annotations, when=when,
@@ -396,7 +396,7 @@ class OperatorRegistry:
         warnings.warn("registry.register_resource_changing_handler() is deprecated; "
                       "use @kopf.on... decorators with registry= kwarg.",
                       DeprecationWarning)
-        resource = resources_.Resource(group, version, plural)
+        resource = references.Resource(group, version, plural)
         return self.resource_changing_handlers[resource].register(
             reason=reason, event=event, field=field, fn=fn, id=id,
             errors=errors, timeout=timeout, retries=retries, backoff=backoff, cooldown=cooldown,
@@ -414,7 +414,7 @@ class OperatorRegistry:
 
     def has_resource_watching_handlers(
             self,
-            resource: resources_.Resource,
+            resource: references.Resource,
     ) -> bool:
         warnings.warn("registry.has_resource_watching_handlers() is deprecated; "
                       "please cease using the internal registries directly.",
@@ -423,7 +423,7 @@ class OperatorRegistry:
 
     def has_resource_changing_handlers(
             self,
-            resource: resources_.Resource,
+            resource: references.Resource,
     ) -> bool:
         warnings.warn("registry.has_resource_changing_handlers() is deprecated; "
                       "please cease using the internal registries directly.",
@@ -494,7 +494,7 @@ class OperatorRegistry:
 
     def get_extra_fields(
             self,
-            resource: resources_.Resource,
+            resource: references.Resource,
     ) -> Set[dicts.FieldPath]:
         warnings.warn("registry.get_extra_fields() is deprecated; "
                       "please cease using the internal registries directly.",
@@ -506,7 +506,7 @@ class OperatorRegistry:
 
     def iter_extra_fields(
             self,
-            resource: resources_.Resource,
+            resource: references.Resource,
     ) -> Iterator[dicts.FieldPath]:
         warnings.warn("registry.iter_extra_fields() is deprecated; "
                       "please cease using the internal registries directly.",
@@ -517,7 +517,7 @@ class OperatorRegistry:
 
     def requires_finalizer(
             self,
-            resource: resources_.Resource,
+            resource: references.Resource,
             cause: causation.ResourceCause,
     ) -> bool:
         """

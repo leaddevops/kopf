@@ -138,7 +138,7 @@ from kopf.structs.primitives import (
     SyncDaemonStopperChecker,
     AsyncDaemonStopperChecker,
 )
-from kopf.structs.resources import (
+from kopf.structs.references import (
     Resource,
 )
 from kopf.toolkits.hierarchies import (
