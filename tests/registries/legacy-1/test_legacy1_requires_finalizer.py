@@ -4,7 +4,7 @@ import kopf
 from kopf import GlobalRegistry
 from kopf.reactor.causation import ResourceCause
 from kopf.structs.filters import MetaFilterToken
-from kopf.structs.references import Resource
+from kopf.structs.references import ResourceRef
 
 OBJECT_BODY = {
     'apiVersion': 'group/version',
@@ -34,7 +34,7 @@ CAUSE = ResourceCause(
 ])
 def test_requires_finalizer_deletion_handler(optional, expected):
     registry = GlobalRegistry()
-    resource = Resource('group', 'version', 'plural')
+    resource = ResourceRef('group', 'version', 'plural')
 
     @kopf.on.delete('group', 'version', 'plural',
                     registry=registry, optional=optional)
@@ -52,7 +52,7 @@ def test_requires_finalizer_deletion_handler(optional, expected):
 ])
 def test_requires_finalizer_multiple_handlers(optional, expected):
     registry = GlobalRegistry()
-    resource = Resource('group', 'version', 'plural')
+    resource = ResourceRef('group', 'version', 'plural')
 
     @kopf.on.create('group', 'version', 'plural',
                     registry=registry)
@@ -71,7 +71,7 @@ def test_requires_finalizer_multiple_handlers(optional, expected):
 
 def test_requires_finalizer_no_deletion_handler():
     registry = GlobalRegistry()
-    resource = Resource('group', 'version', 'plural')
+    resource = ResourceRef('group', 'version', 'plural')
 
     @kopf.on.create('group', 'version', 'plural',
                     registry=registry)
@@ -93,7 +93,7 @@ def test_requires_finalizer_no_deletion_handler():
 ])
 def test_requires_finalizer_deletion_handler_matches_labels(labels, optional, expected):
     registry = GlobalRegistry()
-    resource = Resource('group', 'version', 'plural')
+    resource = ResourceRef('group', 'version', 'plural')
 
     @kopf.on.delete('group', 'version', 'plural',
                     labels=labels,
@@ -116,7 +116,7 @@ def test_requires_finalizer_deletion_handler_matches_labels(labels, optional, ex
 ])
 def test_requires_finalizer_deletion_handler_mismatches_labels(labels, optional, expected):
     registry = GlobalRegistry()
-    resource = Resource('group', 'version', 'plural')
+    resource = ResourceRef('group', 'version', 'plural')
 
     @kopf.on.delete('group', 'version', 'plural',
                     labels=labels,
@@ -139,7 +139,7 @@ def test_requires_finalizer_deletion_handler_mismatches_labels(labels, optional,
 ])
 def test_requires_finalizer_deletion_handler_matches_annotations(annotations, optional, expected):
     registry = GlobalRegistry()
-    resource = Resource('group', 'version', 'plural')
+    resource = ResourceRef('group', 'version', 'plural')
 
     @kopf.on.delete('group', 'version', 'plural',
                     annotations=annotations,
@@ -162,7 +162,7 @@ def test_requires_finalizer_deletion_handler_matches_annotations(annotations, op
 ])
 def test_requires_finalizer_deletion_handler_mismatches_annotations(annotations, optional, expected):
     registry = GlobalRegistry()
-    resource = Resource('group', 'version', 'plural')
+    resource = ResourceRef('group', 'version', 'plural')
 
     @kopf.on.delete('group', 'version', 'plural',
                     annotations=annotations,

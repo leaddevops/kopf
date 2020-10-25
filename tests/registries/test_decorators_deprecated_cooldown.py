@@ -2,7 +2,7 @@ import pytest
 
 import kopf
 from kopf.structs.handlers import HANDLER_REASONS, Activity, Reason
-from kopf.structs.references import Resource
+from kopf.structs.references import ResourceRef
 
 
 def test_on_startup_with_cooldown():
@@ -60,7 +60,7 @@ def test_on_probe_with_cooldown():
 @pytest.mark.parametrize('reason', HANDLER_REASONS)
 def test_on_resume_with_cooldown(mocker, reason, cause_factory):
     registry = kopf.get_default_registry()
-    resource = Resource('group', 'version', 'plural')
+    resource = ResourceRef('group', 'version', 'plural')
     cause = cause_factory(resource=resource, reason=reason, initial=True)
     mocker.patch('kopf.reactor.registries.match', return_value=True)
 
@@ -80,7 +80,7 @@ def test_on_resume_with_cooldown(mocker, reason, cause_factory):
 
 def test_on_create_with_cooldown(mocker, cause_factory):
     registry = kopf.get_default_registry()
-    resource = Resource('group', 'version', 'plural')
+    resource = ResourceRef('group', 'version', 'plural')
     cause = cause_factory(resource=resource, reason=Reason.CREATE)
     mocker.patch('kopf.reactor.registries.match', return_value=True)
 
@@ -100,7 +100,7 @@ def test_on_create_with_cooldown(mocker, cause_factory):
 
 def test_on_update_with_cooldown(mocker, cause_factory):
     registry = kopf.get_default_registry()
-    resource = Resource('group', 'version', 'plural')
+    resource = ResourceRef('group', 'version', 'plural')
     cause = cause_factory(resource=resource, reason=Reason.UPDATE)
     mocker.patch('kopf.reactor.registries.match', return_value=True)
 
@@ -124,7 +124,7 @@ def test_on_update_with_cooldown(mocker, cause_factory):
 ])
 def test_on_delete_with_cooldown(mocker, optional, cause_factory):
     registry = kopf.get_default_registry()
-    resource = Resource('group', 'version', 'plural')
+    resource = ResourceRef('group', 'version', 'plural')
     cause = cause_factory(resource=resource, reason=Reason.DELETE)
     mocker.patch('kopf.reactor.registries.match', return_value=True)
 
@@ -144,7 +144,7 @@ def test_on_delete_with_cooldown(mocker, optional, cause_factory):
 
 def test_on_field_with_cooldown(mocker, cause_factory):
     registry = kopf.get_default_registry()
-    resource = Resource('group', 'version', 'plural')
+    resource = ResourceRef('group', 'version', 'plural')
     diff = [('op', ('field', 'subfield'), 'old', 'new')]
     cause = cause_factory(resource=resource, reason=Reason.UPDATE, diff=diff)
     mocker.patch('kopf.reactor.registries.match', return_value=True)

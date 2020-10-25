@@ -2,7 +2,7 @@ import pytest
 
 import kopf
 from kopf.structs.handlers import HANDLER_REASONS, Reason
-from kopf.structs.references import Resource
+from kopf.structs.references import ResourceRef
 
 
 @pytest.mark.parametrize('deleted', [True, False, None])
@@ -11,7 +11,7 @@ def test_resumes_ignored_for_non_initial_causes(
         reason, deleted, cause_factory):
 
     registry = kopf.get_default_registry()
-    resource = Resource('group', 'version', 'plural')
+    resource = ResourceRef('group', 'version', 'plural')
     cause = cause_factory(resource=resource, reason=reason, initial=False,
                           body={'metadata': {'deletionTimestamp': '...'} if deleted else {}})
 
@@ -28,7 +28,7 @@ def test_resumes_selected_for_initial_non_deletions(
         reason, cause_factory):
 
     registry = kopf.get_default_registry()
-    resource = Resource('group', 'version', 'plural')
+    resource = ResourceRef('group', 'version', 'plural')
     cause = cause_factory(resource=resource, reason=reason, initial=True)
 
     @kopf.on.resume('group', 'version', 'plural')
@@ -45,7 +45,7 @@ def test_resumes_ignored_for_initial_deletions_by_default(
         reason, cause_factory):
 
     registry = kopf.get_default_registry()
-    resource = Resource('group', 'version', 'plural')
+    resource = ResourceRef('group', 'version', 'plural')
     cause = cause_factory(resource=resource, reason=reason, initial=True,
                           body={'metadata': {'deletionTimestamp': '...'}})
 
@@ -62,7 +62,7 @@ def test_resumes_selected_for_initial_deletions_when_explicitly_marked(
         reason, cause_factory):
 
     registry = kopf.get_default_registry()
-    resource = Resource('group', 'version', 'plural')
+    resource = ResourceRef('group', 'version', 'plural')
     cause = cause_factory(resource=resource, reason=reason, initial=True,
                           body={'metadata': {'deletionTimestamp': '...'}})
 

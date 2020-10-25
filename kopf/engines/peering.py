@@ -46,8 +46,8 @@ from kopf.utilities import hostnames
 logger = logging.getLogger(__name__)
 
 # The CRD info on the special sync-object.
-CLUSTER_PEERING_RESOURCE = references.Resource('zalando.org', 'v1', 'clusterkopfpeerings')
-NAMESPACED_PEERING_RESOURCE = references.Resource('zalando.org', 'v1', 'kopfpeerings')
+CLUSTER_PEERING_RESOURCE = references.ResourceRef('zalando.org', 'v1', 'clusterkopfpeerings')
+NAMESPACED_PEERING_RESOURCE = references.ResourceRef('zalando.org', 'v1', 'kopfpeerings')
 
 Identity = NewType('Identity', str)
 
@@ -279,5 +279,5 @@ def detect_own_id(*, manual: bool) -> Identity:
     return Identity(f'{user}@{host}' if manual else f'{user}@{host}/{now}/{rnd}')
 
 
-def guess_resource(namespace: Optional[str]) -> references.Resource:
+def guess_resource(namespace: Optional[str]) -> references.ResourceRef:
     return CLUSTER_PEERING_RESOURCE if namespace is None else NAMESPACED_PEERING_RESOURCE

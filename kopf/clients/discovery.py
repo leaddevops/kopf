@@ -7,7 +7,7 @@ from kopf.structs import references
 @auth.reauthenticated_request
 async def discover(
         *,
-        resource: references.Resource,
+        resource: references.ResourceRef,
         subresource: Optional[str] = None,
         context: Optional[auth.APIContext] = None,  # injected by the decorator
 ) -> Optional[Dict[str, object]]:
@@ -38,7 +38,7 @@ async def discover(
 @auth.reauthenticated_request
 async def is_namespaced(
         *,
-        resource: references.Resource,
+        resource: references.ResourceRef,
         context: Optional[auth.APIContext] = None,  # injected by the decorator
 ) -> bool:
     if context is None:
@@ -51,7 +51,7 @@ async def is_namespaced(
 @auth.reauthenticated_request
 async def is_status_subresource(
         *,
-        resource: references.Resource,
+        resource: references.ResourceRef,
         context: Optional[auth.APIContext] = None,  # injected by the decorator
 ) -> bool:
     if context is None:

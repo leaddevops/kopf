@@ -5,7 +5,7 @@ from kopf.reactor.handling import handler_var, subregistry_var
 from kopf.reactor.invocation import context
 from kopf.reactor.registries import OperatorRegistry, ResourceChangingRegistry
 from kopf.structs.handlers import HANDLER_REASONS, Activity, ErrorsMode, Reason
-from kopf.structs.references import Resource
+from kopf.structs.references import ResourceRef
 
 
 def test_on_startup_minimal():
@@ -63,7 +63,7 @@ def test_on_probe_minimal():
 @pytest.mark.parametrize('reason', HANDLER_REASONS)
 def test_on_resume_minimal(reason, cause_factory):
     registry = kopf.get_default_registry()
-    resource = Resource('group', 'version', 'plural')
+    resource = ResourceRef('group', 'version', 'plural')
     cause = cause_factory(resource=resource, reason=reason, initial=True)
 
     @kopf.on.resume('group', 'version', 'plural')
@@ -89,7 +89,7 @@ def test_on_resume_minimal(reason, cause_factory):
 
 def test_on_create_minimal(cause_factory):
     registry = kopf.get_default_registry()
-    resource = Resource('group', 'version', 'plural')
+    resource = ResourceRef('group', 'version', 'plural')
     cause = cause_factory(resource=resource, reason=Reason.CREATE)
 
     @kopf.on.create('group', 'version', 'plural')
@@ -115,7 +115,7 @@ def test_on_create_minimal(cause_factory):
 
 def test_on_update_minimal(cause_factory):
     registry = kopf.get_default_registry()
-    resource = Resource('group', 'version', 'plural')
+    resource = ResourceRef('group', 'version', 'plural')
     cause = cause_factory(resource=resource, reason=Reason.UPDATE)
 
     @kopf.on.update('group', 'version', 'plural')
@@ -141,7 +141,7 @@ def test_on_update_minimal(cause_factory):
 
 def test_on_delete_minimal(cause_factory):
     registry = kopf.get_default_registry()
-    resource = Resource('group', 'version', 'plural')
+    resource = ResourceRef('group', 'version', 'plural')
     cause = cause_factory(resource=resource, reason=Reason.DELETE)
 
     @kopf.on.delete('group', 'version', 'plural')
@@ -167,7 +167,7 @@ def test_on_delete_minimal(cause_factory):
 
 def test_on_field_minimal(cause_factory):
     registry = kopf.get_default_registry()
-    resource = Resource('group', 'version', 'plural')
+    resource = ResourceRef('group', 'version', 'plural')
     old = {'field': {'subfield': 'old'}}
     new = {'field': {'subfield': 'new'}}
     cause = cause_factory(resource=resource, reason=Reason.UPDATE, old=old, new=new, body=new)
@@ -281,7 +281,7 @@ def test_on_probe_with_all_kwargs(mocker):
 @pytest.mark.parametrize('reason', HANDLER_REASONS)
 def test_on_resume_with_most_kwargs(mocker, reason, cause_factory):
     registry = OperatorRegistry()
-    resource = Resource('group', 'version', 'plural')
+    resource = ResourceRef('group', 'version', 'plural')
     cause = cause_factory(resource=resource, reason=reason, initial=True)
     mocker.patch('kopf.reactor.registries.match', return_value=True)
 
@@ -318,7 +318,7 @@ def test_on_resume_with_most_kwargs(mocker, reason, cause_factory):
 
 def test_on_create_with_most_kwargs(mocker, cause_factory):
     registry = OperatorRegistry()
-    resource = Resource('group', 'version', 'plural')
+    resource = ResourceRef('group', 'version', 'plural')
     cause = cause_factory(resource=resource, reason=Reason.CREATE)
     mocker.patch('kopf.reactor.registries.match', return_value=True)
 
@@ -353,7 +353,7 @@ def test_on_create_with_most_kwargs(mocker, cause_factory):
 
 def test_on_update_with_most_kwargs(mocker, cause_factory):
     registry = OperatorRegistry()
-    resource = Resource('group', 'version', 'plural')
+    resource = ResourceRef('group', 'version', 'plural')
     cause = cause_factory(resource=resource, reason=Reason.UPDATE)
     mocker.patch('kopf.reactor.registries.match', return_value=True)
 
@@ -392,7 +392,7 @@ def test_on_update_with_most_kwargs(mocker, cause_factory):
 ])
 def test_on_delete_with_most_kwargs(mocker, cause_factory, optional):
     registry = OperatorRegistry()
-    resource = Resource('group', 'version', 'plural')
+    resource = ResourceRef('group', 'version', 'plural')
     cause = cause_factory(resource=resource, reason=Reason.DELETE)
     mocker.patch('kopf.reactor.registries.match', return_value=True)
 
@@ -428,7 +428,7 @@ def test_on_delete_with_most_kwargs(mocker, cause_factory, optional):
 
 def test_on_field_with_most_kwargs(mocker, cause_factory):
     registry = OperatorRegistry()
-    resource = Resource('group', 'version', 'plural')
+    resource = ResourceRef('group', 'version', 'plural')
     old = {'field': {'subfield': 'old'}}
     new = {'field': {'subfield': 'new'}}
     cause = cause_factory(resource=resource, reason=Reason.UPDATE, old=old, new=new, body=new)

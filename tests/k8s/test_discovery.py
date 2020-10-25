@@ -2,7 +2,7 @@ import aiohttp.web
 import pytest
 
 from kopf.clients.discovery import discover, is_namespaced, is_status_subresource
-from kopf.structs.references import Resource
+from kopf.structs.references import ResourceRef
 
 
 async def test_discovery_of_existing_resource(
@@ -13,7 +13,7 @@ async def test_discovery_of_existing_resource(
     list_mock = resp_mocker(return_value=aiohttp.web.json_response(result))
     aresponses.add(hostname, '/apis/some-group.org/someversion', 'get', list_mock)
 
-    resource = Resource('some-group.org', 'someversion', 'someresources')
+    resource = ResourceRef('some-group.org', 'someversion', 'someresources')
     info = await discover(resource=resource)
 
     assert info == res1info
@@ -26,7 +26,7 @@ async def test_discovery_of_unexisting_resource(
     list_mock = resp_mocker(return_value=aiohttp.web.json_response(result))
     aresponses.add(hostname, '/apis/some-group.org/someversion', 'get', list_mock)
 
-    resource = Resource('some-group.org', 'someversion', 'someresources')
+    resource = ResourceRef('some-group.org', 'someversion', 'someresources')
     info = await discover(resource=resource)
 
     assert info is None
@@ -39,7 +39,7 @@ async def test_discovery_of_unexisting_group_or_version(
     list_mock = resp_mocker(return_value=aresponses.Response(status=status))
     aresponses.add(hostname, '/apis/some-group.org/someversion', 'get', list_mock)
 
-    resource = Resource('some-group.org', 'someversion', 'someresources')
+    resource = ResourceRef('some-group.org', 'someversion', 'someresources')
     info = await discover(resource=resource)
 
     assert info is None
@@ -59,15 +59,15 @@ async def test_discovery_is_cached_per_session(
     list_mock = resp_mocker(return_value=aiohttp.web.json_response(result))
     aresponses.add(hostname, '/apis/some-group.org/someversion', 'get', list_mock)
 
-    resource = Resource('some-group.org', 'someversion', 'someresources1')
+    resource = ResourceRef('some-group.org', 'someversion', 'someresources1')
     info = await discover(resource=resource)
     assert info == res1info
 
-    resource = Resource('some-group.org', 'someversion', 'someresources2')
+    resource = ResourceRef('some-group.org', 'someversion', 'someresources2')
     info = await discover(resource=resource)
     assert info is None  # cached as absent on the 1st call.
 
-    resource = Resource('some-group.org', 'someversion', 'someresources1')
+    resource = ResourceRef('some-group.org', 'someversion', 'someresources1')
     info = await discover(resource=resource)
     assert info == res1info
 
@@ -81,7 +81,7 @@ async def test_is_namespaced(
     list_mock = resp_mocker(return_value=aiohttp.web.json_response(result))
     aresponses.add(hostname, '/apis/some-group.org/someversion', 'get', list_mock)
 
-    resource = Resource('some-group.org', 'someversion', 'someresources')
+    resource = ResourceRef('some-group.org', 'someversion', 'someresources')
     result = await is_namespaced(resource=resource)
 
     assert result == namespaced
@@ -96,7 +96,7 @@ async def test_is_status_subresource_when_not_a_subresource(
     list_mock = resp_mocker(return_value=aiohttp.web.json_response(result))
     aresponses.add(hostname, '/apis/some-group.org/someversion', 'get', list_mock)
 
-    resource = Resource('some-group.org', 'someversion', 'someresources')
+    resource = ResourceRef('some-group.org', 'someversion', 'someresources')
     result = await is_status_subresource(resource=resource)
 
     assert result is False  # an extra type-check
@@ -112,7 +112,7 @@ async def test_is_status_subresource_when_is_a_subresource(
     list_mock = resp_mocker(return_value=aiohttp.web.json_response(result))
     aresponses.add(hostname, '/apis/some-group.org/someversion', 'get', list_mock)
 
-    resource = Resource('some-group.org', 'someversion', 'someresources')
+    resource = ResourceRef('some-group.org', 'someversion', 'someresources')
     result = await is_status_subresource(resource=resource)
 
     assert result is True  # an extra type-check

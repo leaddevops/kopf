@@ -71,7 +71,7 @@ class Stream(NamedTuple):
 
 
 ObjectUid = NewType('ObjectUid', str)
-ObjectRef = Tuple[references.Resource, ObjectUid]
+ObjectRef = Tuple[references.ResourceRef, ObjectUid]
 Streams = MutableMapping[ObjectRef, Stream]
 
 
@@ -126,7 +126,7 @@ async def watcher(
         *,
         namespace: Union[None, str],
         settings: configuration.OperatorSettings,
-        resource: references.Resource,
+        resource: references.ResourceRef,
         processor: WatchStreamProcessor,
         freeze_checker: Optional[primitives.ToggleSet] = None,
 ) -> None:

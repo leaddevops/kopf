@@ -42,7 +42,7 @@ class ActivityCause(BaseCause):
 
 @dataclasses.dataclass
 class ResourceCause(BaseCause):
-    resource: references.Resource
+    resource: references.ResourceRef
     patch: patches.Patch
     body: bodies.Body
     memo: containers.Memo

@@ -3,7 +3,7 @@ import collections
 import pytest
 
 from kopf import GlobalRegistry
-from kopf.structs.references import Resource
+from kopf.structs.references import ResourceRef
 
 
 # Used in the tests. Must be global-scoped, or its qualname will be affected.
@@ -24,7 +24,7 @@ def test_resources():
     assert isinstance(resources, collections.abc.Collection)
     assert len(resources) == 2
 
-    resource1 = Resource('group1', 'version1', 'plural1')
-    resource2 = Resource('group2', 'version2', 'plural2')
+    resource1 = ResourceRef('group1', 'version1', 'plural1')
+    resource2 = ResourceRef('group2', 'version2', 'plural2')
     assert resource1 in resources
     assert resource2 in resources

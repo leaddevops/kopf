@@ -45,7 +45,7 @@ KNOWN_INCONSISTENCIES = (
 async def apply(
         *,
         settings: configuration.OperatorSettings,
-        resource: references.Resource,
+        resource: references.ResourceRef,
         body: bodies.Body,
         patch: patches.Patch,
         delays: Collection[float],
@@ -96,7 +96,7 @@ async def apply(
 
 async def patch_and_check(
         *,
-        resource: references.Resource,
+        resource: references.ResourceRef,
         body: bodies.Body,
         patch: patches.Patch,
         logger: Union[logging.Logger, logging.LoggerAdapter],

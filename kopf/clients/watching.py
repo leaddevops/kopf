@@ -42,7 +42,7 @@ class WatchingError(Exception):
 async def infinite_watch(
         *,
         settings: configuration.OperatorSettings,
-        resource: references.Resource,
+        resource: references.ResourceRef,
         namespace: Optional[str],
         freeze_checker: Optional[primitives.ToggleSet] = None,
         _iterations: Optional[int] = None,  # used in tests/mocks/fixtures
@@ -84,7 +84,7 @@ async def infinite_watch(
 @contextlib.asynccontextmanager
 async def streaming_block(
         *,
-        resource: references.Resource,
+        resource: references.ResourceRef,
         namespace: Optional[str],
         freeze_checker: Optional[primitives.ToggleSet],
 ) -> AsyncIterator[aiotasks.Future]:
@@ -143,7 +143,7 @@ async def streaming_block(
 async def continuous_watch(
         *,
         settings: configuration.OperatorSettings,
-        resource: references.Resource,
+        resource: references.ResourceRef,
         namespace: Optional[str],
         freeze_waiter: aiotasks.Future,
 ) -> AsyncIterator[bodies.RawEvent]:
@@ -199,7 +199,7 @@ async def continuous_watch(
 async def watch_objs(
         *,
         settings: configuration.OperatorSettings,
-        resource: references.Resource,
+        resource: references.ResourceRef,
         namespace: Optional[str],
         timeout: Optional[float] = None,
         since: Optional[str] = None,

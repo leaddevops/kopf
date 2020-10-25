@@ -7,7 +7,7 @@ from kopf.structs import bodies, patches, references
 @auth.reauthenticated_request
 async def patch_obj(
         *,
-        resource: references.Resource,
+        resource: references.ResourceRef,
         namespace: Optional[str],
         name: Optional[str],
         patch: patches.Patch,

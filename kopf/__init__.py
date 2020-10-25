@@ -139,7 +139,8 @@ from kopf.structs.primitives import (
     AsyncDaemonStopperChecker,
 )
 from kopf.structs.references import (
-    Resource,
+    ResourceRef,
+    ResourceSpec,
 )
 from kopf.toolkits.hierarchies import (
     adopt,
@@ -161,6 +162,7 @@ from kopf.utilities.piggybacking import (
 
 HandlerFatalError = PermanentError  # a backward-compatibility alias
 HandlerRetryError = TemporaryError  # a backward-compatibility alias
+Resource = ResourceRef  # a backward-compatibility alias
 
 __all__ = [
     'on', 'lifecycles', 'register', 'execute', 'daemon', 'timer',
@@ -228,5 +230,5 @@ __all__ = [
     'Patch',
     'SyncDaemonStopperChecker',
     'AsyncDaemonStopperChecker',
-    'Resource',
+    'Resource', 'ResourceRef', 'ResourceSpec',
 ]
