@@ -2,19 +2,19 @@ import re
 
 import pytest
 
-from kopf.engines.peering import CLUSTER_PEERING_RESOURCE, \
-                                 NAMESPACED_PEERING_RESOURCE, detect_presence
+from kopf.engines.peering import detect_presence
+from kopf.structs.references import CLUSTER_PEERINGS_, NAMESPACED_PEERINGS_
 
 
 @pytest.fixture()
 def with_cluster_cr(hostname, aresponses):
-    url = CLUSTER_PEERING_RESOURCE.get_url(namespace=None, name='existent')
+    url = CLUSTER_PEERINGS_.get_url(namespace=None, name='existent')
     aresponses.add(hostname, url, 'get', {'spec': {}})
 
 
 @pytest.fixture()
 def with_namespaced_cr(hostname, aresponses):
-    url = NAMESPACED_PEERING_RESOURCE.get_url(namespace='namespace', name='existent')
+    url = NAMESPACED_PEERINGS_.get_url(namespace='namespace', name='existent')
     aresponses.add(hostname, url, 'get', {'spec': {}})
 
 

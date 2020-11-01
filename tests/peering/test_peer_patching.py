@@ -2,14 +2,14 @@ import aiohttp.web
 import freezegun
 import pytest
 
-from kopf.engines.peering import CLUSTER_PEERING_RESOURCE, \
-                                 NAMESPACED_PEERING_RESOURCE, Peer, clean, touch
+from kopf.engines.peering import Peer, clean, touch
+from kopf.structs.references import CLUSTER_PEERINGS_, NAMESPACED_PEERINGS_
 
 
 @pytest.mark.usefixtures('with_both_crds')
 @pytest.mark.parametrize('namespace, peering_resource', [
-    pytest.param('ns', NAMESPACED_PEERING_RESOURCE, id='namespace-scoped'),
-    pytest.param(None, CLUSTER_PEERING_RESOURCE, id='cluster-scoped'),
+    pytest.param('ns', NAMESPACED_PEERINGS_, id='namespace-scoped'),
+    pytest.param(None, CLUSTER_PEERINGS_, id='cluster-scoped'),
 ])
 @pytest.mark.parametrize('lastseen', [
     pytest.param('2020-01-01T00:00:00', id='when-dead'),
@@ -35,8 +35,8 @@ async def test_cleaning_peers_purges_them(
 
 @pytest.mark.usefixtures('with_both_crds')
 @pytest.mark.parametrize('namespace, peering_resource', [
-    pytest.param('ns', NAMESPACED_PEERING_RESOURCE, id='namespace-scoped'),
-    pytest.param(None, CLUSTER_PEERING_RESOURCE, id='cluster-scoped'),
+    pytest.param('ns', NAMESPACED_PEERINGS_, id='namespace-scoped'),
+    pytest.param(None, CLUSTER_PEERINGS_, id='cluster-scoped'),
 ])
 @freezegun.freeze_time('2020-12-31T23:59:59.123456')
 async def test_touching_a_peer_stores_it(
@@ -59,8 +59,8 @@ async def test_touching_a_peer_stores_it(
 
 @pytest.mark.usefixtures('with_both_crds')
 @pytest.mark.parametrize('namespace, peering_resource', [
-    pytest.param('ns', NAMESPACED_PEERING_RESOURCE, id='namespace-scoped'),
-    pytest.param(None, CLUSTER_PEERING_RESOURCE, id='cluster-scoped'),
+    pytest.param('ns', NAMESPACED_PEERINGS_, id='namespace-scoped'),
+    pytest.param(None, CLUSTER_PEERINGS_, id='cluster-scoped'),
 ])
 @freezegun.freeze_time('2020-12-31T23:59:59.123456')
 async def test_expiring_a_peer_purges_it(

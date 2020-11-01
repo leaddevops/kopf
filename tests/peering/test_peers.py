@@ -3,6 +3,7 @@ import datetime
 import freezegun
 
 from kopf.engines.peering import Peer
+from kopf.structs.references import CLUSTER_PEERINGS_, NAMESPACED_PEERINGS_
 
 
 @freezegun.freeze_time('2020-12-31T23:59:59.123456')
