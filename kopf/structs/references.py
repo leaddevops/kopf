@@ -1,6 +1,12 @@
 import dataclasses
 import urllib.parse
-from typing import List, Mapping, Optional
+from typing import List, Mapping, NewType, Optional
+
+# A specific really existing addressable namespace (at least, the one assumed to be so).
+NamespaceName = NewType('NamespaceName', str)
+
+# A namespace reference usable in the API calls. `None` means cluster-wide API calls.
+NamespaceRef = Optional[NamespaceName]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -22,7 +28,7 @@ class BaseResource:
             self,
             *,
             server: Optional[str] = None,
-            namespace: Optional[str] = None,
+            namespace: NamespaceRef = None,
             name: Optional[str] = None,
             subresource: Optional[str] = None,
             params: Optional[Mapping[str, str]] = None,

@@ -124,7 +124,7 @@ def get_uid(raw_event: bodies.RawEvent) -> ObjectUid:
 
 async def watcher(
         *,
-        namespace: Union[None, str],
+        namespace: references.NamespaceRef,
         settings: configuration.OperatorSettings,
         resource: references.ResourceRef,
         processor: WatchStreamProcessor,
