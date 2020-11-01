@@ -10,9 +10,6 @@ from kopf.structs import bodies, references
 
 logger = logging.getLogger(__name__)
 
-EVENTS_V1BETA1_CRD = references.ResourceRef('events.k8s.io', 'v1beta1', 'events')
-EVENTS_CORE_V1_CRD = references.ResourceRef('', 'v1', 'events')
-
 MAX_MESSAGE_LENGTH = 1024
 CUT_MESSAGE_INFIX = '...'
 
@@ -20,6 +17,7 @@ CUT_MESSAGE_INFIX = '...'
 @auth.reauthenticated_request
 async def post_event(
         *,
+        resource: references.ResourceRef,
         ref: bodies.ObjectReference,
         type: str,
         reason: str,
@@ -75,7 +73,7 @@ async def post_event(
 
     try:
         response = await context.session.post(
-            url=EVENTS_CORE_V1_CRD.get_url(server=context.server, namespace=namespace),
+            url=resource.get_url(server=context.server, namespace=namespace),
             headers={'Content-Type': 'application/json'},
             json=body,
         )

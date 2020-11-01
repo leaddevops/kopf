@@ -1,13 +1,11 @@
-import asyncio
 import dataclasses
 import functools
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, Collection, List, Optional
 
 import click
 
-from kopf.clients import auth
 from kopf.engines import loggers, peering
-from kopf.reactor import activities, registries, running
+from kopf.reactor import registries, running
 from kopf.structs import configuration, credentials, primitives, references
 from kopf.utilities import loaders
 
@@ -63,7 +61,8 @@ def main() -> None:
 
 @main.command()
 @logging_options
-@click.option('-n', '--namespace', default=None)
+@click.option('-A', '--all-namespaces', 'clusterwide', is_flag=True)
+@click.option('-n', '--namespace', 'namespaces', multiple=True)
 @click.option('--standalone', is_flag=True, default=None)
 @click.option('--dev', 'priority', type=int, is_flag=True, flag_value=666)
 @click.option('-L', '--liveness', 'liveness_endpoint', type=str)
@@ -79,10 +78,13 @@ def run(
         peering_name: Optional[str],
         priority: Optional[int],
         standalone: Optional[bool],
-        namespace: references.NamespaceRef,
+        namespaces: Collection[references.NamespaceSpec],
+        clusterwide: bool,
         liveness_endpoint: Optional[str],
 ) -> None:
     """ Start an operator process and handle all the requests. """
+    if namespaces and clusterwide:
+        raise click.UsageError("Either --namespace or --all-namespaces can be used, not both.")
     if __controls.registry is not None:
         registries.set_default_registry(__controls.registry)
     loaders.preload(
@@ -91,7 +93,8 @@ def run(
     )
     return running.run(
         standalone=standalone,
-        namespace=namespace,
+        namespaces=namespaces,
+        clusterwide=clusterwide,
         priority=priority,
         peering_name=peering_name,
         liveness_endpoint=liveness_endpoint,
@@ -105,7 +108,8 @@ def run(
 
 @main.command()
 @logging_options
-@click.option('-n', '--namespace', default=None)
+@click.option('-n', '--namespace', 'namespaces', multiple=True)
+@click.option('-A', '--all-namespaces', 'clusterwide', is_flag=True)
 @click.option('-i', '--id', type=str, default=None)
 @click.option('--dev', 'priority', flag_value=666)
 @click.option('-P', '--peering', 'peering_name', required=True, envvar='KOPF_FREEZE_PEERING')
@@ -116,54 +120,55 @@ def freeze(
         id: Optional[str],
         message: Optional[str],
         lifetime: int,
-        namespace: references.NamespaceRef,
+        namespaces: Collection[references.NamespaceSpec],
+        clusterwide: bool,
         peering_name: str,
         priority: int,
 ) -> None:
     """ Freeze the resource handling in the cluster. """
     identity = peering.Identity(id) if id else peering.detect_own_id(manual=True)
-    registry = registries.SmartOperatorRegistry()
+    insights = references.Insights()
     settings = configuration.OperatorSettings()
-    settings.peering.name = peering_name
-    settings.peering.priority = priority
-    vault = credentials.Vault()
-    auth.vault_var.set(vault)
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(asyncio.wait({
-        activities.authenticate(registry=registry, settings=settings, vault=vault),
-        peering.touch(
+    return running.run(
+        priority=priority,
+        peering_name=peering_name,
+        clusterwide=clusterwide,
+        namespaces=namespaces,
+        insights=insights,
+        identity=identity,
+        settings=settings,
+        _command=peering.touch_command(
+            insights=insights,
             identity=identity,
             settings=settings,
-            namespace=namespace,
-            lifetime=lifetime,
-        ),
-    }))
+            lifetime=lifetime))
 
 
 @main.command()
 @logging_options
-@click.option('-n', '--namespace', default=None)
+@click.option('-n', '--namespace', 'namespaces', multiple=True)
+@click.option('-A', '--all-namespaces', 'clusterwide', is_flag=True)
 @click.option('-i', '--id', type=str, default=None)
 @click.option('-P', '--peering', 'peering_name', required=True, envvar='KOPF_RESUME_PEERING')
 def resume(
         id: Optional[str],
-        namespace: references.NamespaceRef,
+        namespaces: Collection[references.NamespaceSpec],
+        clusterwide: bool,
         peering_name: str,
 ) -> None:
     """ Resume the resource handling in the cluster. """
     identity = peering.Identity(id) if id else peering.detect_own_id(manual=True)
-    registry = registries.SmartOperatorRegistry()
+    insights = references.Insights()
     settings = configuration.OperatorSettings()
-    settings.peering.name = peering_name
-    vault = credentials.Vault()
-    auth.vault_var.set(vault)
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(asyncio.wait({
-        activities.authenticate(registry=registry, settings=settings, vault=vault),
-        peering.touch(
+    return running.run(
+        peering_name=peering_name,
+        clusterwide=clusterwide,
+        namespaces=namespaces,
+        insights=insights,
+        identity=identity,
+        settings=settings,
+        _command=peering.touch_command(
+            insights=insights,
             identity=identity,
             settings=settings,
-            namespace=namespace,
-            lifetime=0,
-        ),
-    }))
+            lifetime=0))

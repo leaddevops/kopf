@@ -13,7 +13,7 @@ This module is a part of the framework's public interface.
 # TODO: add cluster=True support (different API methods)
 import inspect
 import warnings
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, Union, cast
 
 from kopf.reactor import handling, registries
 from kopf.structs import callbacks, dicts, filters, handlers, references
@@ -132,8 +132,19 @@ def probe(  # lgtm[py/similar-function]
 
 
 def resume(  # lgtm[py/similar-function]
-        group: str, version: str, plural: str,
+        # Resource type specification:
+        __group_or_groupversion_or_resource: Optional[Union[str, references.ResourceMarkers]] = None,
+        __version_or_resource: Optional[Union[str, references.ResourceMarkers]] = None,
+        __resource: Optional[Union[str, references.ResourceMarkers]] = None,
         *,
+        group: Optional[str] = None,
+        version: Optional[str] = None,
+        kind: Optional[str] = None,
+        plural: Optional[str] = None,
+        singular: Optional[str] = None,
+        shortcut: Optional[str] = None,
+        category: Optional[str] = None,
+        # Handler's behaviour specification:
         id: Optional[str] = None,
         errors: Optional[handlers.ErrorsMode] = None,
         timeout: Optional[float] = None,
@@ -158,7 +169,11 @@ def resume(  # lgtm[py/similar-function]
         real_registry = registry if registry is not None else registries.get_default_registry()
         real_field = dicts.parse_field(field) or None  # to not store tuple() as a no-field case.
         real_id = registries.generate_id(fn=fn, id=id)
-        resource = references.ResourceSpec(group, version, plural)
+        resource = references.ResourceSpec(
+            __group_or_groupversion_or_resource, __version_or_resource, __resource,
+            group=group, version=version,
+            kind=kind, plural=plural, singular=singular, shortcut=shortcut, category=category,
+        )
         handler = handlers.ResourceChangingHandler(
             fn=fn, id=real_id,
             errors=errors, timeout=timeout, retries=retries, backoff=backoff, cooldown=cooldown,
@@ -173,20 +188,33 @@ def resume(  # lgtm[py/similar-function]
 
 
 def create(  # lgtm[py/similar-function]
-        group: str, version: str, plural: str,
+        # Resource type specification:
+        __group_or_groupversion_or_resource: Optional[Union[str, references.ResourceMarkers]] = None,
+        __version_or_resource: Optional[Union[str, references.ResourceMarkers]] = None,
+        __resource: Optional[Union[str, references.ResourceMarkers]] = None,
         *,
+        group: Optional[str] = None,
+        version: Optional[str] = None,
+        kind: Optional[str] = None,
+        plural: Optional[str] = None,
+        singular: Optional[str] = None,
+        shortcut: Optional[str] = None,
+        category: Optional[str] = None,
+        # Handler's behaviour specification:
         id: Optional[str] = None,
         errors: Optional[handlers.ErrorsMode] = None,
         timeout: Optional[float] = None,
         retries: Optional[int] = None,
         backoff: Optional[float] = None,
         cooldown: Optional[float] = None,  # deprecated; use backoff.
-        registry: Optional[registries.OperatorRegistry] = None,
+        # Resource object specification:
         labels: Optional[filters.MetaFilter] = None,
         annotations: Optional[filters.MetaFilter] = None,
         when: Optional[callbacks.WhenFilterFn] = None,
         field: Optional[dicts.FieldSpec] = None,
         value: Optional[filters.ValueFilter] = None,
+        # Operator specification:
+        registry: Optional[registries.OperatorRegistry] = None,
 ) -> ResourceChangingDecorator:
     """ ``@kopf.on.create()`` handler for the object creation. """
     def decorator(  # lgtm[py/similar-function]
@@ -198,7 +226,11 @@ def create(  # lgtm[py/similar-function]
         real_registry = registry if registry is not None else registries.get_default_registry()
         real_field = dicts.parse_field(field) or None  # to not store tuple() as a no-field case.
         real_id = registries.generate_id(fn=fn, id=id)
-        resource = references.ResourceSpec(group, version, plural)
+        resource = references.ResourceSpec(
+            __group_or_groupversion_or_resource, __version_or_resource, __resource,
+            group=group, version=version,
+            kind=kind, plural=plural, singular=singular, shortcut=shortcut, category=category,
+        )
         handler = handlers.ResourceChangingHandler(
             fn=fn, id=real_id,
             errors=errors, timeout=timeout, retries=retries, backoff=backoff, cooldown=cooldown,
@@ -213,8 +245,19 @@ def create(  # lgtm[py/similar-function]
 
 
 def update(  # lgtm[py/similar-function]
-        group: str, version: str, plural: str,
+        # Resource type specification:
+        __group_or_groupversion_or_resource: Optional[Union[str, references.ResourceMarkers]] = None,
+        __version_or_resource: Optional[Union[str, references.ResourceMarkers]] = None,
+        __resource: Optional[Union[str, references.ResourceMarkers]] = None,
         *,
+        group: Optional[str] = None,
+        version: Optional[str] = None,
+        kind: Optional[str] = None,
+        plural: Optional[str] = None,
+        singular: Optional[str] = None,
+        shortcut: Optional[str] = None,
+        category: Optional[str] = None,
+        # Handler's behaviour specification:
         id: Optional[str] = None,
         errors: Optional[handlers.ErrorsMode] = None,
         timeout: Optional[float] = None,
@@ -240,7 +283,11 @@ def update(  # lgtm[py/similar-function]
         real_registry = registry if registry is not None else registries.get_default_registry()
         real_field = dicts.parse_field(field) or None  # to not store tuple() as a no-field case.
         real_id = registries.generate_id(fn=fn, id=id)
-        resource = references.ResourceSpec(group, version, plural)
+        resource = references.ResourceSpec(
+            __group_or_groupversion_or_resource, __version_or_resource, __resource,
+            group=group, version=version,
+            kind=kind, plural=plural, singular=singular, shortcut=shortcut, category=category,
+        )
         handler = handlers.ResourceChangingHandler(
             fn=fn, id=real_id,
             errors=errors, timeout=timeout, retries=retries, backoff=backoff, cooldown=cooldown,
@@ -255,8 +302,19 @@ def update(  # lgtm[py/similar-function]
 
 
 def delete(  # lgtm[py/similar-function]
-        group: str, version: str, plural: str,
+        # Resource type specification:
+        __group_or_groupversion_or_resource: Optional[Union[str, references.ResourceMarkers]] = None,
+        __version_or_resource: Optional[Union[str, references.ResourceMarkers]] = None,
+        __resource: Optional[Union[str, references.ResourceMarkers]] = None,
         *,
+        group: Optional[str] = None,
+        version: Optional[str] = None,
+        kind: Optional[str] = None,
+        plural: Optional[str] = None,
+        singular: Optional[str] = None,
+        shortcut: Optional[str] = None,
+        category: Optional[str] = None,
+        # Handler's behaviour specification:
         id: Optional[str] = None,
         errors: Optional[handlers.ErrorsMode] = None,
         timeout: Optional[float] = None,
@@ -281,7 +339,11 @@ def delete(  # lgtm[py/similar-function]
         real_registry = registry if registry is not None else registries.get_default_registry()
         real_field = dicts.parse_field(field) or None  # to not store tuple() as a no-field case.
         real_id = registries.generate_id(fn=fn, id=id)
-        resource = references.ResourceSpec(group, version, plural)
+        resource = references.ResourceSpec(
+            __group_or_groupversion_or_resource, __version_or_resource, __resource,
+            group=group, version=version,
+            kind=kind, plural=plural, singular=singular, shortcut=shortcut, category=category,
+        )
         handler = handlers.ResourceChangingHandler(
             fn=fn, id=real_id,
             errors=errors, timeout=timeout, retries=retries, backoff=backoff, cooldown=cooldown,
@@ -300,16 +362,26 @@ __UNSET = 'a.deprecation.marker.that.is.never.going.to.go.beyond.decorators.and.
 
 
 def field(  # lgtm[py/similar-function]
-        group: str, version: str, plural: str,
+        # Resource type specification:
+        __group_or_groupversion_or_resource: Optional[Union[str, references.ResourceMarkers]] = None,
+        __version_or_resource: Optional[Union[str, references.ResourceMarkers]] = None,
+        __resource: Optional[Union[str, references.ResourceMarkers]] = None,
         __field: dicts.FieldSpec = __UNSET,  # deprecated (as positional)
         *,
+        group: Optional[str] = None,
+        version: Optional[str] = None,
+        kind: Optional[str] = None,
+        plural: Optional[str] = None,
+        singular: Optional[str] = None,
+        shortcut: Optional[str] = None,
+        category: Optional[str] = None,
+        # Handler's behaviour specification:
         id: Optional[str] = None,
         errors: Optional[handlers.ErrorsMode] = None,
         timeout: Optional[float] = None,
         retries: Optional[int] = None,
         backoff: Optional[float] = None,
         cooldown: Optional[float] = None,  # deprecated, use `backoff`
-        registry: Optional[registries.OperatorRegistry] = None,
         labels: Optional[filters.MetaFilter] = None,
         annotations: Optional[filters.MetaFilter] = None,
         when: Optional[callbacks.WhenFilterFn] = None,
@@ -317,6 +389,7 @@ def field(  # lgtm[py/similar-function]
         value: Optional[filters.ValueFilter] = None,
         old: Optional[filters.ValueFilter] = None,
         new: Optional[filters.ValueFilter] = None,
+        registry: Optional[registries.OperatorRegistry] = None,
 ) -> ResourceChangingDecorator:
     """ ``@kopf.on.field()`` handler for the individual field changes. """
     field = _warn_deprecated_positional_field(__field, field)
@@ -329,7 +402,11 @@ def field(  # lgtm[py/similar-function]
         real_registry = registry if registry is not None else registries.get_default_registry()
         real_field = dicts.parse_field(field) or None  # to not store tuple() as a no-field case.
         real_id = registries.generate_id(fn=fn, id=id, suffix=".".join(real_field or []))
-        resource = references.ResourceSpec(group, version, plural)
+        resource = references.ResourceSpec(
+            __group_or_groupversion_or_resource, __version_or_resource, __resource,
+            group=group, version=version,
+            kind=kind, plural=plural, singular=singular, shortcut=shortcut, category=category,
+        )
         handler = handlers.ResourceChangingHandler(
             fn=fn, id=real_id,
             errors=errors, timeout=timeout, retries=retries, backoff=backoff, cooldown=cooldown,
@@ -344,8 +421,19 @@ def field(  # lgtm[py/similar-function]
 
 
 def event(  # lgtm[py/similar-function]
-        group: str, version: str, plural: str,
+        # Resource type specification:
+        __group_or_groupversion_or_resource: Optional[Union[str, references.ResourceMarkers]] = None,
+        __version_or_resource: Optional[Union[str, references.ResourceMarkers]] = None,
+        __resource: Optional[Union[str, references.ResourceMarkers]] = None,
         *,
+        group: Optional[str] = None,
+        version: Optional[str] = None,
+        kind: Optional[str] = None,
+        plural: Optional[str] = None,
+        singular: Optional[str] = None,
+        shortcut: Optional[str] = None,
+        category: Optional[str] = None,
+        # Handler's behaviour specification:
         id: Optional[str] = None,
         registry: Optional[registries.OperatorRegistry] = None,
         labels: Optional[filters.MetaFilter] = None,
@@ -364,7 +452,11 @@ def event(  # lgtm[py/similar-function]
         real_registry = registry if registry is not None else registries.get_default_registry()
         real_field = dicts.parse_field(field) or None  # to not store tuple() as a no-field case.
         real_id = registries.generate_id(fn=fn, id=id)
-        resource = references.ResourceSpec(group, version, plural)
+        resource = references.ResourceSpec(
+            __group_or_groupversion_or_resource, __version_or_resource, __resource,
+            group=group, version=version,
+            kind=kind, plural=plural, singular=singular, shortcut=shortcut, category=category,
+        )
         handler = handlers.ResourceWatchingHandler(
             fn=fn, id=real_id,
             errors=None, timeout=None, retries=None, backoff=None, cooldown=None,
@@ -377,8 +469,19 @@ def event(  # lgtm[py/similar-function]
 
 
 def daemon(  # lgtm[py/similar-function]
-        group: str, version: str, plural: str,
+        # Resource type specification:
+        __group_or_groupversion_or_resource: Optional[Union[str, references.ResourceMarkers]] = None,
+        __version_or_resource: Optional[Union[str, references.ResourceMarkers]] = None,
+        __resource: Optional[Union[str, references.ResourceMarkers]] = None,
         *,
+        group: Optional[str] = None,
+        version: Optional[str] = None,
+        kind: Optional[str] = None,
+        plural: Optional[str] = None,
+        singular: Optional[str] = None,
+        shortcut: Optional[str] = None,
+        category: Optional[str] = None,
+        # Handler's behaviour specification:
         id: Optional[str] = None,
         errors: Optional[handlers.ErrorsMode] = None,
         timeout: Optional[float] = None,
@@ -406,7 +509,11 @@ def daemon(  # lgtm[py/similar-function]
         real_registry = registry if registry is not None else registries.get_default_registry()
         real_field = dicts.parse_field(field) or None  # to not store tuple() as a no-field case.
         real_id = registries.generate_id(fn=fn, id=id)
-        resource = references.ResourceSpec(group, version, plural)
+        resource = references.ResourceSpec(
+            __group_or_groupversion_or_resource, __version_or_resource, __resource,
+            group=group, version=version,
+            kind=kind, plural=plural, singular=singular, shortcut=shortcut, category=category,
+        )
         handler = handlers.ResourceDaemonHandler(
             fn=fn, id=real_id,
             errors=errors, timeout=timeout, retries=retries, backoff=backoff, cooldown=cooldown,
@@ -423,8 +530,19 @@ def daemon(  # lgtm[py/similar-function]
 
 
 def timer(  # lgtm[py/similar-function]
-        group: str, version: str, plural: str,
+        # Resource type specification:
+        __group_or_groupversion_or_resource: Optional[Union[str, references.ResourceMarkers]] = None,
+        __version_or_resource: Optional[Union[str, references.ResourceMarkers]] = None,
+        __resource: Optional[Union[str, references.ResourceMarkers]] = None,
         *,
+        group: Optional[str] = None,
+        version: Optional[str] = None,
+        kind: Optional[str] = None,
+        plural: Optional[str] = None,
+        singular: Optional[str] = None,
+        shortcut: Optional[str] = None,
+        category: Optional[str] = None,
+        # Handler's behaviour specification:
         id: Optional[str] = None,
         errors: Optional[handlers.ErrorsMode] = None,
         timeout: Optional[float] = None,
@@ -452,7 +570,11 @@ def timer(  # lgtm[py/similar-function]
         real_registry = registry if registry is not None else registries.get_default_registry()
         real_field = dicts.parse_field(field) or None  # to not store tuple() as a no-field case.
         real_id = registries.generate_id(fn=fn, id=id)
-        resource = references.ResourceSpec(group, version, plural)
+        resource = references.ResourceSpec(
+            __group_or_groupversion_or_resource, __version_or_resource, __resource,
+            group=group, version=version,
+            kind=kind, plural=plural, singular=singular, shortcut=shortcut, category=category,
+        )
         handler = handlers.ResourceTimerHandler(
             fn=fn, id=real_id,
             errors=errors, timeout=timeout, retries=retries, backoff=backoff, cooldown=cooldown,

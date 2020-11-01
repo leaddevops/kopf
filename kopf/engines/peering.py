@@ -37,17 +37,14 @@ import os
 import random
 from typing import Any, Dict, Iterable, Mapping, NewType, NoReturn, Optional, cast
 
+import click
 import iso8601
 
-from kopf.clients import fetching, patching
+from kopf.clients import patching
 from kopf.structs import bodies, configuration, patches, primitives, references
-from kopf.utilities import hostnames
+from kopf.utilities import aiotasks, hostnames
 
 logger = logging.getLogger(__name__)
-
-# The CRD info on the special sync-object.
-CLUSTER_PEERING_RESOURCE = references.ResourceRef('zalando.org', 'v1', 'clusterkopfpeerings')
-NAMESPACED_PEERING_RESOURCE = references.ResourceRef('zalando.org', 'v1', 'kopfpeerings')
 
 Identity = NewType('Identity', str)
 
@@ -93,8 +90,9 @@ async def process_peering_event(
         *,
         raw_event: bodies.RawEvent,
         namespace: references.NamespaceRef,
-        identity: Identity,
+        resource: references.ResourceRef,
         settings: configuration.OperatorSettings,
+        identity: Identity,
         autoclean: bool = True,
         replenished: asyncio.Event,
         freeze_toggle: primitives.Toggle,
@@ -113,7 +111,7 @@ async def process_peering_event(
     meta: bodies.RawMeta = raw_event['object']['metadata']
 
     # Silently ignore the peering objects which are not ours to worry.
-    if meta.get('namespace') != namespace or meta.get('name') != settings.peering.name:
+    if meta.get('name') != settings.peering.name:
         return
 
     # Find if we are still the highest priority operator.
@@ -125,7 +123,7 @@ async def process_peering_event(
     same_peers = [peer for peer in live_peers if peer.priority == settings.peering.priority]
 
     if autoclean and dead_peers:
-        await clean(peers=dead_peers, settings=settings, namespace=namespace)
+        await clean(peers=dead_peers, settings=settings, namespace=namespace, resource=resource)
 
     if prio_peers:
         if freeze_toggle.is_off():
@@ -151,12 +149,18 @@ async def process_peering_event(
         try:
             await asyncio.wait_for(replenished.wait(), timeout=delay)
         except asyncio.TimeoutError:
-            await touch(identity=identity, settings=settings, namespace=namespace)
+            await touch(
+                identity=identity,
+                settings=settings,
+                resource=resource,
+                namespace=namespace,
+            )
 
 
 async def keepalive(
         *,
         namespace: references.NamespaceRef,
+        resource: references.ResourceRef,
         identity: Identity,
         settings: configuration.OperatorSettings,
 ) -> NoReturn:
@@ -165,7 +169,12 @@ async def keepalive(
     """
     try:
         while True:
-            await touch(identity=identity, settings=settings, namespace=namespace)
+            await touch(
+                identity=identity,
+                settings=settings,
+                resource=resource,
+                namespace=namespace,
+            )
 
             # How often do we update. Keep limited to avoid k8s api flooding.
             # Should be slightly less than the lifetime, enough for a patch request to finish.
@@ -178,6 +187,7 @@ async def keepalive(
             await asyncio.shield(touch(
                 identity=identity,
                 settings=settings,
+                resource=resource,
                 namespace=namespace,
                 lifetime=0,
             ))
@@ -189,14 +199,13 @@ async def keepalive(
 
 async def touch(
         *,
-        identity: Identity,
-        settings: configuration.OperatorSettings,
         namespace: references.NamespaceRef,
+        resource: references.ResourceRef,
+        settings: configuration.OperatorSettings,
+        identity: Identity,
         lifetime: Optional[int] = None,
 ) -> None:
     name = settings.peering.name
-    resource = guess_resource(namespace=namespace)
-
     peer = Peer(
         identity=identity,
         priority=settings.peering.priority,
@@ -215,37 +224,16 @@ async def touch(
 
 async def clean(
         *,
-        peers: Iterable[Peer],
-        settings: configuration.OperatorSettings,
         namespace: references.NamespaceRef,
+        resource: references.ResourceRef,
+        settings: configuration.OperatorSettings,
+        peers: Iterable[Peer],
 ) -> None:
     name = settings.peering.name
-    resource = guess_resource(namespace=namespace)
 
     patch = patches.Patch()
     patch.update({'status': {peer.identity: None for peer in peers}})
     await patching.patch_obj(resource=resource, namespace=namespace, name=name, patch=patch)
-
-
-async def detect_presence(
-        *,
-        settings: configuration.OperatorSettings,
-        namespace: references.NamespaceRef,
-) -> Optional[bool]:
-
-    if settings.peering.standalone:
-        return None
-
-    resource = guess_resource(namespace=namespace)
-    name = settings.peering.name
-    obj = await fetching.read_obj(resource=resource, namespace=namespace, name=name, default=None)
-    if settings.peering.mandatory and obj is None:
-        raise Exception(f"The mandatory peering {name!r} was not found.")
-    elif obj is None:
-        logger.warning(f"Default peering object is not found, falling back to the standalone mode.")
-        return False
-    else:
-        return True
 
 
 def detect_own_id(*, manual: bool) -> Identity:
@@ -279,5 +267,44 @@ def detect_own_id(*, manual: bool) -> Identity:
     return Identity(f'{user}@{host}' if manual else f'{user}@{host}/{now}/{rnd}')
 
 
-def guess_resource(namespace: references.NamespaceRef) -> references.ResourceRef:
-    return CLUSTER_PEERING_RESOURCE if namespace is None else NAMESPACED_PEERING_RESOURCE
+def guess_resource(settings: configuration.OperatorSettings) -> Optional[references.ResourceSpec]:
+    if settings.peering.standalone:
+        return None
+    elif settings.peering.clusterwide:
+        return references.CLUSTER_PEERINGS
+    elif settings.peering.namespaced:
+        return references.NAMESPACED_PEERINGS
+    else:
+        raise TypeError("Unidentified peering mode (none of standalone/cluster/namespaced).")
+
+
+async def touch_command(
+        *,
+        lifetime: Optional[int],
+        insights: references.Insights,
+        identity: Identity,
+        settings: configuration.OperatorSettings,
+) -> None:
+
+    await asyncio.wait({
+        insights.ready_namespaces.wait(),
+        insights.ready_resources.wait(),
+    })
+
+    resource_spec = guess_resource(settings=settings)
+    resource = insights.backbone.get(resource_spec) if resource_spec else None
+    if resource is None:
+        raise click.UsageError(f"Cannot find the peering resource {resource_spec}.")
+
+    await aiotasks.wait({
+        aiotasks.create_guarded_task(
+            name="peering command", finishable=True, logger=logger,
+            coro=touch(
+                namespace=namespace,
+                resource=resource,
+                identity=identity,
+                settings=settings,
+                lifetime=lifetime),
+        )
+        for namespace in insights.namespaces
+    })

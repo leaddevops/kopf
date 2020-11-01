@@ -141,6 +141,7 @@ from kopf.structs.primitives import (
 from kopf.structs.references import (
     ResourceRef,
     ResourceSpec,
+    EVERYTHING,
 )
 from kopf.toolkits.hierarchies import (
     adopt,
@@ -230,5 +231,5 @@ __all__ = [
     'Patch',
     'SyncDaemonStopperChecker',
     'AsyncDaemonStopperChecker',
-    'Resource', 'ResourceRef', 'ResourceSpec',
+    'Resource', 'ResourceRef', 'ResourceSpec', 'EVERYTHING',
 ]

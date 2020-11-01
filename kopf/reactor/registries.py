@@ -339,19 +339,26 @@ class OperatorRegistry:
         self.resource_spawning_handlers = ResourceSpawningRegistry()
         self.resource_changing_handlers = ResourceChangingRegistry()
 
-    @property
-    def resources(self) -> Set[references.ResourceRef]:
-        """ All known resources in the registry. """
-        specs: FrozenSet[references.ResourceSpec] = frozenset(
-            {h.resource for h in self.resource_watching_handlers.get_all_handlers() if h.resource} |
-            {h.resource for h in self.resource_spawning_handlers.get_all_handlers() if h.resource} |
-            {h.resource for h in self.resource_changing_handlers.get_all_handlers() if h.resource}
-        )
-        return {references.ResourceRef(spec.group, spec.version, spec.plural) for spec in specs}
-
     #
     # Everything below is deprecated and will be removed in the next major release.
     #
+
+    @property
+    def resources(self) -> Set[references.ResourceSpec]:
+        """
+        All known resources in the registry.
+
+        **DEPRECATED:** It has lost its meaning, as there are no more specific
+        resources, but only the partial resource specifications or globs/masks.
+        The actual resources are retrieved from the cluster at runtime.
+        """
+        warnings.warn("registry.resources is deprecated; stop introscoping the registry at all.",
+                      DeprecationWarning)
+        return (
+            {h.resource for h in self.resource_watching_handlers.get_all_handlers() if h.resource} |
+            {h.resource for h in self.resource_changing_handlers.get_all_handlers() if h.resource} |
+            {h.resource for h in self.resource_spawning_handlers.get_all_handlers() if h.resource}
+        )
 
     def register_activity_handler(
             self,
@@ -392,7 +399,7 @@ class OperatorRegistry:
         warnings.warn("registry.register_resource_watching_handler() is deprecated; "
                       "use @kopf.on... decorators with registry= kwarg.",
                       DeprecationWarning)
-        resource = references.ResourceSpec(group, version, plural)
+        resource = references.ResourceSpec(group=group, version=version, plural=plural)
         return self.resource_watching_handlers.register(
             fn=fn, id=id,
             resource=resource, labels=labels, annotations=annotations, when=when,
@@ -426,7 +433,7 @@ class OperatorRegistry:
         warnings.warn("registry.register_resource_changing_handler() is deprecated; "
                       "use @kopf.on... decorators with registry= kwarg.",
                       DeprecationWarning)
-        resource = references.ResourceSpec(group, version, plural)
+        resource = references.ResourceSpec(group=group, version=version, plural=plural)
         return self.resource_changing_handlers.register(
             reason=reason, event=event, field=field, fn=fn, id=id,
             errors=errors, timeout=timeout, retries=retries, backoff=backoff, cooldown=cooldown,

@@ -141,6 +141,26 @@ class PeeringSettings:
     But they can be forced to either mode (standalone or mandatory peering).
     """
 
+    clusterwide: bool = False
+    """
+    Should the peering be clusterwide or namespaced?
+
+    Usually, the peering has the same mode as the operator, using the peering
+    objects either in the served namespaces or cluster-wide accordingly.
+
+    In exceptional cases, the peering can mismatch the operator's mode:
+    e.g. using the cluster-wide peering while the operator is namespaced.
+    """
+
+    @property
+    def namespaced(self) -> bool:
+        """ An inverse of ``clusterwide``, for code readability. """
+        return not self.clusterwide
+
+    @namespaced.setter
+    def namespaced(self, value: bool) -> None:
+        self.clusterwide = not value
+
 
 @dataclasses.dataclass
 class WatchingSettings:
@@ -220,6 +240,30 @@ class BatchingSettings:
     To disable throttling (on your own risk), set it to ``[]`` or ``()``.
     """
 
+
+@dataclasses.dataclass
+class ScanningSettings:
+    """
+    Settings for dynamic runtime observation of the cluster's setup.
+    """
+
+    disabled: bool = False
+    """
+    Should the cluster's dynamic monitoring for resources/namespaces be off?
+
+    If enabled (the default), then the operator will try to observe
+    the namespaces and custom resources, and will gracefully start/stop
+    the watch streams for them (also the peering activities, if applicable).
+    This requires RBAC permissions to list/watch the V1 namespaces and CRDs.
+
+    If disabled or if enabled but the permission is not granted, then only
+    the specific namespaces will be served, with namespace patterns ignored;
+    and only the resources detected at startup will be served, with added CRDs
+    or CRD versions being ignored, and the deleted CRDs causing failures.
+    
+    The default mode is good enough for most cases, unless the strict
+    (non-dynamic) mode is intended -- to prevent the warnings in the logs.
+    """
 
 
 @dataclasses.dataclass
@@ -349,6 +393,7 @@ class OperatorSettings:
     peering: PeeringSettings = dataclasses.field(default_factory=PeeringSettings)
     watching: WatchingSettings = dataclasses.field(default_factory=WatchingSettings)
     batching: BatchingSettings = dataclasses.field(default_factory=BatchingSettings)
+    scanning: ScanningSettings = dataclasses.field(default_factory=ScanningSettings)
     execution: ExecutionSettings = dataclasses.field(default_factory=ExecutionSettings)
     background: BackgroundSettings = dataclasses.field(default_factory=BackgroundSettings)
     persistence: PersistenceSettings = dataclasses.field(default_factory=PersistenceSettings)

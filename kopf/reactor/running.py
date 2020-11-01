@@ -8,7 +8,7 @@ from typing import Any, Collection, Coroutine, MutableSequence, Optional, Sequen
 
 from kopf.clients import auth
 from kopf.engines import peering, posting, probing
-from kopf.reactor import activities, daemons, lifecycles, processing, queueing, registries
+from kopf.reactor import activities, daemons, lifecycles, observation, processing, registries
 from kopf.structs import configuration, containers, credentials, handlers, primitives, references
 from kopf.utilities import aiotasks
 
@@ -66,14 +66,19 @@ def run(
         registry: Optional[registries.OperatorRegistry] = None,
         settings: Optional[configuration.OperatorSettings] = None,
         memories: Optional[containers.ResourceMemories] = None,
+        insights: Optional[references.Insights] = None,
+        identity: Optional[peering.Identity] = None,
         standalone: Optional[bool] = None,
         priority: Optional[int] = None,
         peering_name: Optional[str] = None,
         liveness_endpoint: Optional[str] = None,
-        namespace: Optional[references.NamespaceRef] = None,
+        clusterwide: bool,
+        namespaces: Collection[references.NamespaceSpec] = (),
+        namespace: Optional[references.NamespaceRef] = None,  # deprecated
         stop_flag: Optional[primitives.Flag] = None,
         ready_flag: Optional[primitives.Flag] = None,
         vault: Optional[credentials.Vault] = None,
+        _command: Optional[Coroutine[None, None, None]] = None,
 ) -> None:
     """
     Run the whole operator synchronously.
@@ -87,7 +92,11 @@ def run(
             registry=registry,
             settings=settings,
             memories=memories,
+            insights=insights,
+            identity=identity,
             standalone=standalone,
+            clusterwide=clusterwide,
+            namespaces=namespaces,
             namespace=namespace,
             priority=priority,
             peering_name=peering_name,
@@ -95,6 +104,7 @@ def run(
             stop_flag=stop_flag,
             ready_flag=ready_flag,
             vault=vault,
+            _command=_command,
         ))
     except asyncio.CancelledError:
         pass
@@ -106,14 +116,19 @@ async def operator(
         registry: Optional[registries.OperatorRegistry] = None,
         settings: Optional[configuration.OperatorSettings] = None,
         memories: Optional[containers.ResourceMemories] = None,
+        insights: Optional[references.Insights] = None,
+        identity: Optional[peering.Identity] = None,
         standalone: Optional[bool] = None,
         priority: Optional[int] = None,
         peering_name: Optional[str] = None,
         liveness_endpoint: Optional[str] = None,
-        namespace: Optional[references.NamespaceRef] = None,
+        clusterwide: bool,
+        namespaces: Collection[references.NamespaceSpec] = (),
+        namespace: Optional[references.NamespaceRef] = None,  # deprecated
         stop_flag: Optional[primitives.Flag] = None,
         ready_flag: Optional[primitives.Flag] = None,
         vault: Optional[credentials.Vault] = None,
+        _command: Optional[Coroutine[None, None, None]] = None,
 ) -> None:
     """
     Run the whole operator asynchronously.
@@ -129,7 +144,11 @@ async def operator(
         registry=registry,
         settings=settings,
         memories=memories,
+        insights=insights,
+        identity=identity,
         standalone=standalone,
+        clusterwide=clusterwide,
+        namespaces=namespaces,
         namespace=namespace,
         priority=priority,
         peering_name=peering_name,
@@ -137,6 +156,7 @@ async def operator(
         stop_flag=stop_flag,
         ready_flag=ready_flag,
         vault=vault,
+        _command=_command,
     )
     await run_tasks(operator_tasks, ignored=existing_tasks)
 
@@ -147,14 +167,19 @@ async def spawn_tasks(
         registry: Optional[registries.OperatorRegistry] = None,
         settings: Optional[configuration.OperatorSettings] = None,
         memories: Optional[containers.ResourceMemories] = None,
+        insights: Optional[references.Insights] = None,
+        identity: Optional[peering.Identity] = None,
         standalone: Optional[bool] = None,
         priority: Optional[int] = None,
         peering_name: Optional[str] = None,
         liveness_endpoint: Optional[str] = None,
-        namespace: Optional[references.NamespaceRef] = None,
+        clusterwide: bool,
+        namespaces: Collection[references.NamespaceSpec] = (),
+        namespace: Optional[references.NamespaceRef] = None,  # deprecated
         stop_flag: Optional[primitives.Flag] = None,
         ready_flag: Optional[primitives.Flag] = None,
         vault: Optional[credentials.Vault] = None,
+        _command: Optional[Coroutine[None, None, None]] = None,
 ) -> Collection[aiotasks.Task]:
     """
     Spawn all the tasks needed to run the operator.
@@ -163,22 +188,36 @@ async def spawn_tasks(
     """
     loop = asyncio.get_running_loop()
 
+    if namespaces and namespace:
+        raise TypeError("Either namespaces= or namespace= can be passed. Got both.")
+    elif namespace:
+        warnings.warn("namespace= is deprecated; use namespaces=[...]", DeprecationWarning)
+        namespaces = [references.NamespaceSpec(namespace)]
+
+    if clusterwide and namespaces:
+        raise TypeError("The operator can be either cluster-wide or namespaced, not both.")
+    if not clusterwide and not namespaces:
+        warnings.warn("Absence of either namespaces or cluster-wide flag will become an error soon."
+                      " For now, switching to the cluster-wide mode for backward compatibility.",
+                      FutureWarning)
+        clusterwide = True
+
     # The freezer and the registry are scoped to this whole task-set, to sync them all.
     lifecycle = lifecycle if lifecycle is not None else lifecycles.get_default_lifecycle()
     registry = registry if registry is not None else registries.get_default_registry()
     settings = settings if settings is not None else configuration.OperatorSettings()
     memories = memories if memories is not None else containers.ResourceMemories()
+    insights = insights if insights is not None else references.Insights()
+    identity = identity if identity is not None else peering.detect_own_id(manual=False)
     vault = vault if vault is not None else global_vault
     vault = vault if vault is not None else credentials.Vault()
     event_queue: posting.K8sEventQueue = asyncio.Queue()
-    freeze_name = f"{peering_name!r}@{namespace}" if namespace else f"cluster-wide {peering_name!r}"
-    freeze_checker = primitives.ToggleSet()
-    freeze_toggle = await freeze_checker.make_toggle(name=freeze_name)
     signal_flag: aiotasks.Future = asyncio.Future()
     started_flag: asyncio.Event = asyncio.Event()
     tasks: MutableSequence[aiotasks.Task] = []
 
     # Map kwargs into the settings object.
+    settings.peering.clusterwide = clusterwide
     if peering_name is not None:
         settings.peering.mandatory = True
         settings.peering.name = peering_name
@@ -235,6 +274,7 @@ async def spawn_tasks(
     tasks.append(aiotasks.create_guarded_task(
         name="poster of events", flag=started_flag, logger=logger,
         coro=posting.poster(
+            backbone=insights.backbone,
             event_queue=event_queue)))
 
     # Liveness probing -- so that Kubernetes would know that the operator is alive.
@@ -246,42 +286,40 @@ async def spawn_tasks(
                 settings=settings,
                 endpoint=liveness_endpoint)))
 
-    # Monitor the peers, unless explicitly disabled.
-    if await peering.detect_presence(namespace=namespace, settings=settings):
-        identity = peering.detect_own_id(manual=False)
-        tasks.append(aiotasks.create_guarded_task(
-            name="peering keepalive", flag=started_flag, logger=logger,
-            coro=peering.keepalive(
-                namespace=namespace,
-                settings=settings,
-                identity=identity)))
-        tasks.append(aiotasks.create_guarded_task(
-            name="watcher of peering", flag=started_flag, logger=logger,
-            coro=queueing.watcher(
-                namespace=namespace,
-                settings=settings,
-                resource=peering.guess_resource(namespace=namespace),
-                processor=functools.partial(peering.process_peering_event,
-                                            namespace=namespace,
-                                            settings=settings,
-                                            identity=identity,
-                                            freeze_toggle=freeze_toggle))))
+    # Permanent observation of what resource kinds and namespaces are available in the cluster.
+    # Spawn and cancel dimensional tasks as they come and go; dimensions = resources x namespaces.
+    tasks.append(aiotasks.create_guarded_task(
+        name="resource observer", flag=started_flag, logger=logger,
+        coro=observation.resource_observer(
+            insights=insights,
+            registry=registry,
+            settings=settings)))
+    tasks.append(aiotasks.create_guarded_task(
+        name="namespace observer", flag=started_flag, logger=logger,
+        coro=observation.namespace_observer(
+            clusterwide=clusterwide,
+            namespaces=namespaces,
+            insights=insights,
+            settings=settings)))
 
-    # Resource event handling, only once for every known resource (de-duplicated).
-    for resource in registry.resources:
+    # Explicit command is a hack for the CLI to run coroutines in an operator-like environment.
+    # If not specified, then use the normal resource processing. It is not exposed publicly (yet).
+    if _command is not None:
         tasks.append(aiotasks.create_guarded_task(
-            name=f"watcher of {resource.name}", flag=started_flag, logger=logger,
-            coro=queueing.watcher(
-                namespace=namespace,
+            name="the command", flag=started_flag, logger=logger, finishable=True,
+            coro=_command))
+    else:
+        tasks.append(aiotasks.create_guarded_task(
+            name="multidimensional multitasker", flag=started_flag, logger=logger,
+            coro=observation.ochestrator(
                 settings=settings,
-                resource=resource,
-                freeze_checker=freeze_checker,
+                insights=insights,
+                identity=identity,
                 processor=functools.partial(processing.process_resource_event,
                                             lifecycle=lifecycle,
                                             registry=registry,
                                             settings=settings,
                                             memories=memories,
-                                            resource=resource,
                                             event_queue=event_queue))))
 
     # On Ctrl+C or pod termination, cancel all tasks gracefully.
