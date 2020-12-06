@@ -285,6 +285,12 @@ def revise_resources(
         logger.warning("Unresolved resources cannot be served (try creating their CRDs):"
                        f" {unresolved_names}")
 
+    # Warn for resources that lack mandatory operations that make the framework possible.
+    nonwatchable = {ref for resources in resolved.values() for ref in resources
+                    if 'watch' not in ref.verbs and 'list' not in ref.verbs}
+    if nonwatchable:
+        logger.warning(f"Non-watchable resources will not be served: {nonwatchable}")
+        insights.resources.difference_update(nonwatchable)
 
 async def resource_observer(
         *,
