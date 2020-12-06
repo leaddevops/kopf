@@ -81,24 +81,31 @@ async def _read_version(
         preferred: bool,
         context: auth.APIContext,
 ) -> Collection[references.ResourceRef]:
-    rsp = await errors.parse_response(await context.session.get(url))
-    return {
-        references.ResourceRef(
-            group=group,
-            version=version,
-            kind=resource['kind'],
-            plural=resource['name'],
-            singular=resource['singularName'],
-            shortcuts=frozenset(resource.get('shortNames', [])),
-            categories=frozenset(resource.get('categories', [])),
-            subresources=frozenset(
-                subresource['name'].split('/', 1)[-1]
-                for subresource in rsp['resources']
-                if subresource['name'].startswith(f'{resource["name"]}/')
-            ),
-            namespaced=resource['namespaced'],
-            preferred=preferred,
-        )
-        for resource in rsp['resources']
-        if '/' not in resource['name']
-    }
+    try:
+        rsp = await errors.parse_response(await context.session.get(url))
+    except errors.APINotFoundError:
+        # This happens when the last and the only resource of a group/version
+        # has been deleted, the whole group/version is gone, and we rescan it.
+        return set()
+    else:
+        return {
+            references.ResourceRef(
+                group=group,
+                version=version,
+                kind=resource['kind'],
+                plural=resource['name'],
+                singular=resource['singularName'],
+                shortcuts=frozenset(resource.get('shortNames', [])),
+                categories=frozenset(resource.get('categories', [])),
+                subresources=frozenset(
+                    subresource['name'].split('/', 1)[-1]
+                    for subresource in rsp['resources']
+                    if subresource['name'].startswith(f'{resource["name"]}/')
+                ),
+                namespaced=resource['namespaced'],
+                preferred=preferred,
+                verbs=resource.get('verbs', []),
+            )
+            for resource in rsp['resources']
+            if '/' not in resource['name']
+        }
